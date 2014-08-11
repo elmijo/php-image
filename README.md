@@ -71,3 +71,41 @@ Metodos
 >   * filename: *(requerido)* Ruta absoluta de la imagen a guardar
 
 Otra caracteristica a resaltar es el soporte a los fondos transparentes, permitiendo asi aplicar cualquiera de las manipulaciones descritas sin que afecte a las imagenes con background transparentes.
+
+Ejemplo
+=======
+
+Datemos un pequeño ejemplo del uso de esta libreria:
+
+#### 1.- Incluir la libreria
+
+```php
+use PHPImage\PHPImage;
+```
+
+#### 2.- Inicializar la clase
+
+```php
+$image = new PHPImage('imagen.jpg');
+```
+
+#### 3.- Aplicar metodo
+
+```php
+$image->thumbnailImage(350,200);
+```
+ó
+```php
+$image->resizeImage(200,500);
+```
+
+#### 4.- Guardar imagen resultante en el formato deseado
+
+```php
+$image->saveAsJPEG("nueva_imagen.jpg");
+
+$image->saveAsPNG("nueva_imagen.png");
+
+$image->saveAsGIF("nueva_imagen.gif");
+
+```
