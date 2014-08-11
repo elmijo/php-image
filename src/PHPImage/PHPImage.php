@@ -4,33 +4,14 @@ namespace PHPImage;
 
 use PHPImage\Util\PHPImageFile;
 /**
-* 
+*Clase para la manipulaxión de imagenes JPEG, PNG y  GIF
 */
 class PHPImage
 {
-    protected $mime_types = array(
-        'image/gif',
-        'image/jpeg',
-        'image/png',
-        'application/x-shockwave-flash',
-        'image/psd',
-        'image/bmp',
-        'image/tiff',
-        'application/octet-stream',
-        'image/jp2',
-        'application/octet-stream',
-        'image/iff',
-        'image/vnd.wap.wbmp',
-        'image/xbm',
-        'image/vnd.microsoft.icon'
-    );
-
-    protected $extensions = array(
-        "gif","jpg","png","swf","psd","bmp",
-        "jpeg","tiff","tiff","jpc","jp2","jpx",
-        "jb2","swc","iff","wbmp","xbm","ico"
-    );
-
+    /**
+     * Arreglo con los mimetype por estención
+     * @var array
+     */
     protected $extensions_mime_types = array(
         'png'  => 'image/png',
         'jpe'  => 'image/jpeg',
@@ -39,15 +20,30 @@ class PHPImage
         'gif'  => 'image/gif'
     );
 
+    /**
+     * Instancia PHPImage\Util\PHPImageFile de la imagen definida
+     * @var PHPImage\Util\PHPImageFile
+     */
     private $image        = NULL;
 
+    /**
+     * Instancia GD de la manipulación de la imagen definida
+     * @var resource
+     */
     private $imageResult  = NULL;
     
+    /**
+     * Constructor
+     * @param string $filename Ruta absoluta de la imagen que se desea manipular
+     */
     function __construct($filename = '')
     {
-        $this->setImage($filename);//resource
+        $this->setImage($filename);
     }
 
+    /**
+     * Destructor
+     */
     function __destruct() {
 
        @imagedestroy($this->image);
@@ -56,22 +52,27 @@ class PHPImage
 
     }
 
+    /**
+     * Permite definir la imagen a manipular
+     * @param string $filename Ruta absoluta de la imagen que se desea definir
+     */
     public function setImage($filename)
     {
-
         if(!!$this->esImagen($filename))
         {
-
             $this->image       = new PHPImageFile($filename);
 
             $this->imageResult = NULL;
-            
         }
-
         return $this;
-
     }
 
+    /**
+     * Permite crear miniaturas de la imagen definida
+     * @param  interger|float $width  Ancho de la miniatura
+     * @param  interger|float $height Alto de la miniatura
+     * @return void
+     */
     public function thumbnailImage($width,$height = NULL)
     {
         if(is_null($height))
@@ -125,54 +126,72 @@ class PHPImage
         $x = ($crop_width>$width?$crop_width-$width:$width-$crop_width)/2;
         $y = ($crop_height>$height?$crop_height-$height:$height-$crop_height)/2;
 
-        $this->cropImage($this->imageResult,$crop_width, $crop_height,$x,$y);
+        $this->cropImage($crop_width, $crop_height,$x,$y);
     }
 
+    /**
+     * Permite escalar la imagen definida
+     * @param  interger|float $width  Ancho a escalar
+     * @param  interger|float $height Alto a escalar
+     * @return void
+     */
     public function scaleImage($width,$height=NULL)
     {
-        if(is_null($height)){
-
+        if(is_null($height))
+        {
             $height = $width;
-
         }
 
-        if(get_class($this->image) == 'PHPImage\Util\PHPImageFile'){
-
+        if(get_class($this->image) == 'PHPImage\Util\PHPImageFile')
+        {
             $scale  = min($width/$this->image->getWidth(), $height/$this->image->getHeight(), 1);
             $width  = round($scale * $this->image->getWidth());
             $height = round($scale * $this->image->getHeight());
-
             $this->resizeImage($width,$height);
         }
     }
 
+    /**
+     * Permite redimencionar la imagen definida
+     * @param  interger|float $width  Ancho a redimencionar
+     * @param  interger|float $height Alto a redimencionar
+     * @return void
+     */
     public function resizeImage($width,$height)
     {
-
-        if(get_class($this->image) == 'PHPImage\Util\PHPImageFile'){
-
+        if(get_class($this->image) == 'PHPImage\Util\PHPImageFile')
+        {
             $this->imageResult = imagecreatetruecolor($width, $height);
-
             $this->backgrpundTransparent();
-
             imagecopyresized($this->imageResult, $this->image->getResource(), 0, 0, 0, 0, $width, $height, $this->image->getWidth(), $this->image->getHeight());
-
         }
-
     }
 
-    public function cropImage($image,$width,$height,$x,$y)
+    /**
+     * Permite recortar la imagen definida
+     * @param  interger|float $width  Ancho a recortar
+     * @param  interger|float $height Alto a recortar
+     * @param  interger|float $x      Posición en el eje X del corte
+     * @param  interger|float $y      Posición en el eje Y del corte
+     * @return void
+     */
+    public function cropImage($width,$height,$x,$y)
     {
-        if(get_class($this->image) == 'PHPImage\Util\PHPImageFile'){
-
+        if(get_class($this->image) == 'PHPImage\Util\PHPImageFile')
+        {
+            $image             = $this->esImageGd($this->imageResult)?$this->imageResult:$this->image->getResource();
             $this->imageResult = imagecreatetruecolor($width, $height);
-
             $this->backgrpundTransparent();
-
             imagecopy($this->imageResult,$image,0, 0,$x, $y,$width, $height);
         }
     }
 
+    /**
+     * Permite Guardar una imagen como JPEG
+     * @param  string  $filename Ruta absoluta de la imagen a guardar
+     * @param  integer $quality  Calidad de la imagen
+     * @return boolean           Devuelve TRUE si la imagen fue guaradada con exito o FALSe en caso contrario 
+     */
     public function saveAsJPEG($filename,$quality = 90)
     {
         
@@ -188,7 +207,13 @@ class PHPImage
         return FALSE;
     }
 
-
+    /**
+     * Permite Guardar una imagen como PNG
+     * @param  string  $filename Ruta absoluta de la imagen a guardar
+     * @param  integer $quality  Calidad de la imagen
+     * @param  boolean $filters  Permite Activar o desactivar los filtros del PNG
+     * @return boolean           Devuelve TRUE si la imagen fue guaradada con exito o FALSe en caso contrario 
+     */
     public function saveAsPNG($filename,$quality = 9, $filters=FALSE)
     {
 
@@ -206,6 +231,11 @@ class PHPImage
         return FALSE;
     }
 
+    /**
+     * Permite Guardar una imagen como GIF
+     * @param  string  $filename Ruta absoluta de la imagen a guardar
+     * @return boolean           Devuelve TRUE si la imagen fue guaradada con exito o FALSe en caso contrario 
+     */
     public function saveAsGIF($filename)
     {
         
@@ -219,6 +249,11 @@ class PHPImage
         return FALSE;
     }
 
+    /**
+     * Evalua si una ruta dada existe, se puede leer y si suextención y mimetype son los de una imagen
+     * @param  string  $filename Ruta absoluta de la imagen
+     * @return boolean           Devuelve TRUE si es una imagen o FALSE en caso contrario
+     */
     private function esImagen($filename)
     {
         return  !!file_exists($filename)&&
@@ -228,27 +263,40 @@ class PHPImage
         ;
     }
 
+    /**
+     * Evalua si el valor dado es una instancia GD
+     * @param  resource $resource Valor a evaluar
+     * @return boolean           Devuelve TRUE si es una instancia GD o FALSE en caso contrario
+     */
     private function esImageGd($resource)
     {
-
         return !!is_resource($resource)&&get_resource_type($resource)=='gd';
-
     }
 
+    /**
+     * Evalua si el valor dado es una extención valida
+     * @param  string  $ext Valor a evaluar
+     * @return boolean      Devuelve TRUE si es una extención valida o FALSE en caso contrario
+     */
     private function isExtension($ext)
     {
-
         return !!array_key_exists($ext,$this->extensions_mime_types);
-
     }
 
+    /**
+     * Evalua si el valor dado es un mimetype valido
+     * @param  string  $ext Valor a evaluar
+     * @return boolean      Devuelve TRUE si es un mimetype valido o FALSE en caso contrario
+     */
     private function isMimeType($mime)
     {
-
         return !!array_search($mime,$this->extensions_mime_types);
-
     }
 
+    /**
+     * Permite evaluar y aplicar valor de transparencia a las instancia GD que lo necesiten
+     * @return void
+     */
     private function backgrpundTransparent()
     {
         if(!!$this->image->isAlpha())
@@ -257,10 +305,9 @@ class PHPImage
 
             $color       = array('red' => 255, 'green' => 255, 'blue' => 255);
             
-            if ($index >= 0) {
-
+            if ($index >= 0) 
+            {
                 $color   = imagecolorsforindex($this->image->getResource(), $index);   
-
             }
            
             $transparent = imagecolorallocate($this->imageResult, $color['red'], $color['green'], $color['blue']);
@@ -268,11 +315,7 @@ class PHPImage
             imagefill($this->imageResult, 0, 0, $transparent);
 
             imagecolortransparent($this->imageResult, $transparent); 
-
         }
     }
-
 }
-
-
 ?>
