@@ -74,50 +74,58 @@ class PHPImage
 
     public function thumbnailImage($width,$height = NULL)
     {
-        if(is_null($height)){
-
+        if(is_null($height))
+        {
             $height = $width;
-
         }
+
+        $crop_width  = $width;
+        $crop_height = $height;
 
         if($this->image->getWidth()>$this->image->getHeight())
         {
-
             $escala = $this->image->getWidth()/$this->image->getHeight();
 
-        }
-        else if($this->image->getWidth()<$this->image->getHeight())
-        {
+            $width  = round($escala*$height);
 
+            if($width<$crop_width){
+
+                $escala = $this->image->getHeight()/$this->image->getWidth();
+
+                $height  = round($escala*$crop_width);
+
+                $width   = $crop_width;
+            }
+
+        }
+        else if($this->image->getHeight()>$this->image->getWidth())
+        {
             $escala = $this->image->getHeight()/$this->image->getWidth();
 
+            $height  = $escala*$width;
+
+            if($height<$crop_height){
+
+                $escala = $this->image->getWidth()/$this->image->getHeight();
+
+                $width  = round($escala*$crop_height);
+
+                $height   = $crop_height;
+            }
         }
         else
         {
-
             $escala = 1;
 
+            $width = $height = max($width,$height);
         }
 
-        if($width<$height)
-        {
+        $this->resizeImage($width,$height);
 
-            $menor = $width;
+        $x = ($crop_width>$width?$crop_width-$width:$width-$crop_width)/2;
+        $y = ($crop_height>$height?$crop_height-$height:$height-$crop_height)/2;
 
-        }
-        else
-        {
-
-            $menor=$height;
-
-        }
-
-        var_dump($menor);
-        var_dump($height*$escala);
-        exit;
-
-
-        //$this->resizeImage($width,$height);
+        $this->cropImage($this->imageResult,$crop_width, $crop_height,$x,$y);
     }
 
     public function scaleImage($width,$height=NULL)
@@ -151,6 +159,18 @@ class PHPImage
 
         }
 
+    }
+
+    public function cropImage($image,$width,$height,$x,$y)
+    {
+        if(get_class($this->image) == 'PHPImage\Util\PHPImageFile'){
+
+            $this->imageResult = imagecreatetruecolor($width, $height);
+
+            $this->backgrpundTransparent();
+
+            imagecopy($this->imageResult,$image,0, 0,$x, $y,$width, $height);
+        }
     }
 
     public function saveAsJPEG($filename,$quality = 90)
