@@ -85,7 +85,7 @@ class PHPImageFile
 
         $this->bits     = $getimagensize['bits'];
 
-        $this->channels = $getimagensize['channels'];
+        $this->channels = isset($getimagensize['channels'])?$getimagensize['channels']:NULL;
 
         $this->mime     = $getimagensize['mime'];
 

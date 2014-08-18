@@ -10,7 +10,8 @@
     ],
     "minimum-stability": "stable",
     "require": {
-        "php": ">=5.1.3"
+        "php": ">=5.1.3",
+        "elmijo/php-error-log": "1.0"
     },
     "autoload": {
         "psr-0": {"": "src/"}

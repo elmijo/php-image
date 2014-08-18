@@ -3,6 +3,8 @@
 namespace PHPImage;
 
 use PHPImage\Util\PHPImageFile;
+use PHPImage\Util\PHPImageMessage as MSG;
+use PHPErrorLog\PHPErrorLog;
 /**
 *Clase para la manipulaxión de imagenes JPEG, PNG y  GIF
 */
@@ -38,7 +40,10 @@ class PHPImage
      */
     function __construct($filename = '')
     {
-        $this->setImage($filename);
+        if($filename!='')
+        {
+            $this->setImage($filename);
+        }
     }
 
     /**
@@ -63,8 +68,10 @@ class PHPImage
             $this->image       = new PHPImageFile($filename);
 
             $this->imageResult = NULL;
+
+            return TRUE;
         }
-        return $this;
+        return FALSE;
     }
 
     /**
@@ -80,53 +87,60 @@ class PHPImage
             $height = $width;
         }
 
-        $crop_width  = $width;
-        $crop_height = $height;
-
-        if($this->image->getWidth()>$this->image->getHeight())
+        if(get_class($this->image) == 'PHPImage\Util\PHPImageFile')
         {
-            $escala = $this->image->getWidth()/$this->image->getHeight();
+            $crop_width  = $width;
+            $crop_height = $height;
 
-            $width  = round($escala*$height);
-
-            if($width<$crop_width){
-
-                $escala = $this->image->getHeight()/$this->image->getWidth();
-
-                $height  = round($escala*$crop_width);
-
-                $width   = $crop_width;
-            }
-
-        }
-        else if($this->image->getHeight()>$this->image->getWidth())
-        {
-            $escala = $this->image->getHeight()/$this->image->getWidth();
-
-            $height  = $escala*$width;
-
-            if($height<$crop_height){
-
+            if($this->image->getWidth()>$this->image->getHeight())
+            {
                 $escala = $this->image->getWidth()/$this->image->getHeight();
 
-                $width  = round($escala*$crop_height);
+                $width  = round($escala*$height);
 
-                $height   = $crop_height;
+                if($width<$crop_width){
+
+                    $escala = $this->image->getHeight()/$this->image->getWidth();
+
+                    $height  = round($escala*$crop_width);
+
+                    $width   = $crop_width;
+                }
+
             }
+            else if($this->image->getHeight()>$this->image->getWidth())
+            {
+                $escala = $this->image->getHeight()/$this->image->getWidth();
+
+                $height  = $escala*$width;
+
+                if($height<$crop_height){
+
+                    $escala = $this->image->getWidth()/$this->image->getHeight();
+
+                    $width  = round($escala*$crop_height);
+
+                    $height   = $crop_height;
+                }
+            }
+            else
+            {
+                $escala = 1;
+
+                $width = $height = max($width,$height);
+            }
+
+            $this->resizeImage($width,$height);
+
+            $x = ($crop_width>$width?$crop_width-$width:$width-$crop_width)/2;
+            $y = ($crop_height>$height?$crop_height-$height:$height-$crop_height)/2;
+
+            return $this->cropImage($crop_width, $crop_height,$x,$y);
         }
-        else
-        {
-            $escala = 1;
 
-            $width = $height = max($width,$height);
-        }
+        PHPErrorLog::write("PHPImage: ".MSG::NO_IMAGE);
 
-        $this->resizeImage($width,$height);
-
-        $x = ($crop_width>$width?$crop_width-$width:$width-$crop_width)/2;
-        $y = ($crop_height>$height?$crop_height-$height:$height-$crop_height)/2;
-
-        $this->cropImage($crop_width, $crop_height,$x,$y);
+        return FALSE;
     }
 
     /**
@@ -147,8 +161,12 @@ class PHPImage
             $scale  = min($width/$this->image->getWidth(), $height/$this->image->getHeight(), 1);
             $width  = round($scale * $this->image->getWidth());
             $height = round($scale * $this->image->getHeight());
-            $this->resizeImage($width,$height);
+            return $this->resizeImage($width,$height);
         }
+
+        PHPErrorLog::write("PHPImage: ".MSG::NO_IMAGE);
+
+        return FALSE;
     }
 
     /**
@@ -163,8 +181,12 @@ class PHPImage
         {
             $this->imageResult = imagecreatetruecolor($width, $height);
             $this->backgrpundTransparent();
-            imagecopyresized($this->imageResult, $this->image->getResource(), 0, 0, 0, 0, $width, $height, $this->image->getWidth(), $this->image->getHeight());
+            return imagecopyresized($this->imageResult, $this->image->getResource(), 0, 0, 0, 0, $width, $height, $this->image->getWidth(), $this->image->getHeight());
         }
+
+        PHPErrorLog::write("PHPImage: ".MSG::NO_IMAGE);
+
+        return FALSE;
     }
 
     /**
@@ -182,8 +204,53 @@ class PHPImage
             $image             = $this->esImageGd($this->imageResult)?$this->imageResult:$this->image->getResource();
             $this->imageResult = imagecreatetruecolor($width, $height);
             $this->backgrpundTransparent();
-            imagecopy($this->imageResult,$image,0, 0,$x, $y,$width, $height);
+            return imagecopy($this->imageResult,$image,0, 0,$x, $y,$width, $height);
         }
+        
+        PHPErrorLog::write("PHPImage: ".MSG::NO_IMAGE);
+
+        return FALSE;
+    }
+
+    public function saveImage($filename,$quality = NULL, $filters=FALSE)
+    {
+        $extFile  = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+
+        $dirFile  = pathinfo($filename,PATHINFO_DIRNAME);
+
+        if(get_class($this->image) == 'PHPImage\Util\PHPImageFile')
+        {
+            if(!$this->isExtension($extFile))
+            {
+                PHPErrorLog::write("PHPImage: ".sprintf(MSG::FILE_NO_EXTENTION,realpath($filename)));
+            }
+            else if(!is_writable($dirFile))
+            {
+                PHPErrorLog::write("PHPImage: ".sprintf(MSG::FILE_NO_WRITEABLE,$dirFile));
+            }
+            else
+            {
+                if(!$this->esImageGd($this->imageResult))
+                {
+                    $this->resizeImage($this->image->getWidth(),$this->image->getHeight());
+                }
+
+                switch ($extFile) {
+                    case 'png':
+                        return $this->saveAsPNG($filename, $quality, $filters);
+
+                    case 'gif':
+                        return $this->saveAsGIF($filename);                                                
+                    
+                    default:
+                        return $this->saveAsJPEG($filename,$quality);
+                }
+            }
+        }
+        
+        PHPErrorLog::write("PHPImage: ".MSG::NO_IMAGE);
+
+        return FALSE;        
     }
 
     /**
@@ -192,19 +259,11 @@ class PHPImage
      * @param  integer $quality  Calidad de la imagen
      * @return boolean           Devuelve TRUE si la imagen fue guaradada con exito o FALSe en caso contrario 
      */
-    public function saveAsJPEG($filename,$quality = 90)
+    private function saveAsJPEG($filename,$quality)
     {
-        
-        $ext     = pathinfo($filename, PATHINFO_EXTENSION);
+        $quality = ($quality==NULL||$quality>100||$quality<0)?90:$quality;
 
-        $quality = ($quality>100||$quality<0)?90:$quality;
-
-        if(!!$this->esImageGd($this->imageResult)&&!!$this->isExtension($ext)&&!!is_writable(pathinfo($filename,PATHINFO_DIRNAME)))
-        {
-            return imagejpeg($this->imageResult,$filename,$quality);
-        }
-
-        return FALSE;
+        return imagejpeg($this->imageResult,$filename,$quality);
     }
 
     /**
@@ -214,39 +273,23 @@ class PHPImage
      * @param  boolean $filters  Permite Activar o desactivar los filtros del PNG
      * @return boolean           Devuelve TRUE si la imagen fue guaradada con exito o FALSe en caso contrario 
      */
-    public function saveAsPNG($filename,$quality = 9, $filters=FALSE)
+    private function saveAsPNG($filename,$quality, $filters=FALSE)
     {
-
-        $ext     = pathinfo($filename, PATHINFO_EXTENSION);
-
-        $quality = ($quality>9||$quality<0)?9:$quality;
+        $quality = ($quality==NULL||$quality>9||$quality<0)?9:$quality;
 
         $filters = !!$filters?PNG_ALL_FILTERS:PNG_NO_FILTER;
 
-        if(!!$this->esImageGd($this->imageResult)&&!!$this->isExtension($ext)&&!!is_writable(pathinfo($filename,PATHINFO_DIRNAME)))
-        {
-            return imagepng($this->imageResult,$filename,$quality,$filters);
-        }
-
-        return FALSE;
-    }
+        return imagepng($this->imageResult,$filename,$quality,$filters);
+    }   
 
     /**
      * Permite Guardar una imagen como GIF
      * @param  string  $filename Ruta absoluta de la imagen a guardar
      * @return boolean           Devuelve TRUE si la imagen fue guaradada con exito o FALSe en caso contrario 
      */
-    public function saveAsGIF($filename)
+    private function saveAsGIF($filename)
     {
-        
-        $ext     = pathinfo($filename, PATHINFO_EXTENSION);
-
-        if(!!$this->esImageGd($this->imageResult)&&!!$this->isExtension($ext)&&!!is_writable(pathinfo($filename,PATHINFO_DIRNAME)))
-        {
-            return imagegif($this->imageResult,$filename);
-        }
-
-        return FALSE;
+        return imagegif($this->imageResult,$filename);
     }
 
     /**
@@ -256,11 +299,27 @@ class PHPImage
      */
     private function esImagen($filename)
     {
-        return  !!file_exists($filename)&&
-                !!is_readable($filename)&&
-                !!$this->isExtension(pathinfo($filename, PATHINFO_EXTENSION))&&
-                !!$this->isMimeType(mime_content_type($filename))
-        ;
+        if(!file_exists($filename))
+        {
+            PHPErrorLog::write("PHPImage: ".sprintf(MSG::FILE_NO_EXITS,$filename));
+        }
+        else if(!is_readable($filename))
+        {
+            PHPErrorLog::write("PHPImage: ".sprintf(MSG::FILE_NO_READABLE,realpath($filename)));
+        }
+        else if(!$this->isExtension(pathinfo($filename, PATHINFO_EXTENSION)))
+        {
+            PHPErrorLog::write("PHPImage: ".sprintf(MSG::FILE_NO_EXTENTION,realpath($filename)));
+        }
+        else if(!$this->isMimeType(mime_content_type($filename)))
+        {
+            PHPErrorLog::write("PHPImage: ".sprintf(MSG::FILE_NO_MIME_TYPE,$filename));
+        }
+        else
+        {
+            return TRUE;
+        }
+        return  FALSE;
     }
 
     /**
