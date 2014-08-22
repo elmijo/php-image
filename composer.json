@@ -1,17 +1,18 @@
 {
-    "name": "jerry/php-image",
+    "name": "elmijo/php-image",
     "description": "Una libreria para manipular imagenes con la extención GD de php",
     "license": "MIT",
     "authors": [
         {
-            "name": "Jerry",
+            "name": "Jerry Anselmi",
             "email": "jerry.anselmi@gmail.com"
         }
     ],
     "minimum-stability": "stable",
     "require": {
         "php": ">=5.1.3",
-        "elmijo/php-error-log": "1.0"
+        "elmijo/php-error-log": "1.1",
+        "elmijo/php-cliente-addr": "dev-master"
     },
     "autoload": {
         "psr-0": {"": "src/"}

@@ -222,12 +222,6 @@ class PHPImageFile
 
                 break;
 
-            case IMAGETYPE_WBMP:
-                
-                $this->resource = imagecreatefromwbmp($this->filename);
-
-                break;
-
             default:
 
                 $this->resource = NULL;
@@ -270,6 +264,7 @@ class PHPImageFile
 
                 break;
         }
+        
         return FALSE;
     }
 }

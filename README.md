@@ -49,26 +49,14 @@ Metodos
 >   * x: *(requerido)* Posición en el eje X del corte
 >   * y: *(requerido)* posición  en el eje Y del corte
 
-#### saveAsJPEG
+
+#### saveImage
 
 > * **Desciopción:** Permite guardar una imagen como JPEG
 > * **Parametros:** 
 >   * filename: *(requerido)* Ruta absoluta de la imagen a guardar
->   * quality: *(opcional)* calidad de la imagen a guardar, debe ser un valor entre 0 y 100, por defecto el valor es 90
-
-#### saveAsPNG
-
-> * **Desciopción:** Permite guardar una imagen como PNG
-> * **Parametros:** 
->   * filename: *(requerido)* Ruta absoluta de la imagen a guardar
->   * quality: *(opcional)* calidad de la imagen a guardar, debe ser un valor entre 0 y 9, por defecto el valor es 9
+>   * quality: *(opcional)* calidad de la imagen a guardar (en caso de ser PNG ó JPG), debe ser un valor entre 0 y 9 si el formato es PNG y entre 0 y 100 si es JPG, por defecto el valor es 9 para los PNG y 90 para los JPG
 >   * filters: *(opcional)* Permite activar o desactivar los filtros de las imagenes PNG, por defecto el valor es FALSE
-
-#### saveAsGIF
-
-> * **Desciopción:** Permite guardar una imagen como GIF
-> * **Parametros:** 
->   * filename: *(requerido)* Ruta absoluta de la imagen a guardar
 
 Otra caracteristica a resaltar es el soporte a los fondos transparentes, permitiendo asi aplicar cualquiera de las manipulaciones descritas sin que afecte a las imagenes con background transparentes.
 
@@ -102,10 +90,10 @@ $image->resizeImage(200,500);
 #### 4.- Guardar imagen resultante en el formato deseado
 
 ```php
-$image->saveAsJPEG("nueva_imagen.jpg");
+$image->saveImage("nueva_imagen.jpg",100);
 
-$image->saveAsPNG("nueva_imagen.png");
+$image->saveImage("nueva_imagen.png",9,TRUE);
 
-$image->saveAsGIF("nueva_imagen.gif");
+$image->saveImage("nueva_imagen.gif");
 
 ```
